@@ -1,0 +1,57 @@
+diff -ruN capsimage-5.1/CAPSImg/configure.in capsimage-5.1-patched/CAPSImg/configure.in
+--- capsimage-5.1/CAPSImg/configure.in	2014-06-19 10:59:18.000000000 +0000
++++ capsimage-5.1-patched/CAPSImg/configure.in	2026-10-20 20:53:01.440963239 +0000
+@@ -41,6 +41,14 @@
+ 	LIB_LDFLAGS="${LDFLAGS} -shared"
+ 	EXTRA_LIBS="../${LIBRARY}"
+ 	;;
++    powerpc-*-amigaos)
++	STATIC_LIBRARY="lib${PACKAGE}.a"
++	LIBRARY="lib${PACKAGE}.so.${VERSION}"
++	CFLAGS="${CFLAGS} -O3 -mstrict-align"
++	PICFLAGS="-fPIC"
++	LIB_LDFLAGS="${LDFLAGS} -shared"
++	EXTRA_LIBS="../${LIBRARY}"
++	;;
+     *)
+ 	LIBRARY="lib${PACKAGE}.so.${VERSION}"
+ 	CFLAGS="${CFLAGS} -O2 -fomit-frame-pointer"
+@@ -55,6 +63,7 @@
+ CXXFLAGS="${CFLAGS}  -fno-exceptions -fno-rtti -std=c++0x"
+ 
+ AC_SUBST(PACKAGE)
++AC_SUBST(STATIC_LIBRARY)
+ AC_SUBST(LIBRARY)
+ AC_SUBST(EXTRA_OBJECTS)
+ AC_SUBST(PICFLAGS)
+diff -ruN capsimage-5.1/CAPSImg/Makefile.in capsimage-5.1-patched/CAPSImg/Makefile.in
+--- capsimage-5.1/CAPSImg/Makefile.in	2014-06-17 22:55:04.000000000 +0000
++++ capsimage-5.1-patched/CAPSImg/Makefile.in	2026-10-20 20:49:46.369493925 +0000
+@@ -14,17 +14,21 @@
+ LDFLAGS		= @LDFLAGS@ @LIB_LDFLAGS@
+ LIBS		= @LIB_LIBS@
+ 
++STATIC_LIBRARY	= @STATIC_LIBRARY@
+ LIBRARY		= @LIBRARY@
+ OBJECTS		= @EXTRA_OBJECTS@ ../Codec/CTRawCodec.o ../Codec/CTRawCodecDecompressor.o ../Codec/DiskEncoding.o ../Core/BaseFile.o ../Core/BitBuffer.o ../Core/CRC.o ../Core/DiskFile.o ../Core/MemoryFile.o CapsAPI.o CapsFDCEmulator.o CapsFile.o CapsFormatMFM.o CapsImage.o CapsImageStd.o CapsLoader.o DiskImage.o DiskImageFactory.o stdafx.o StreamCueImage.o StreamImage.o
+ 
+ 
+ .PHONY: all clean distclean dist
+ 
+-all: $(LIBRARY)
++all: $(LIBRARY) $(STATIC_LIBRARY)
+ 
+ $(LIBRARY): $(OBJECTS)
+ 	$(CXX) $(LDFLAGS) $(PICFLAGS) $^ $(LIBS) -o $@
+ 
++$(STATIC_LIBRARY): $(OBJECTS)
++	$(AR) rc $@ $^
++
+ capsimage.o: capsimage.c
+ 	$(CC) $(CFLAGS) -c $< -o $@
+ 
+@@ -50,3 +54,4 @@
+ install:
+ 	install -d $(DESTDIR)$(libdir)
+ 	install $(LIBRARY) $(DESTDIR)$(libdir)/$(LIBRARY)
++	install $(STATIC_LIBRARY) $(prefix)/$(STATIC_LIBRARY)
